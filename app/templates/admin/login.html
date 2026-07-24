@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block shell %}
+<main class="login-shell">
+    <section class="login-card" aria-labelledby="login-title">
+        <div class="login-brand">
+            <span class="brand-mark brand-mark-large">C</span>
+            <span class="eyebrow">CURVATURETECH · ADMIN</span>
+        </div>
+        <h1 id="login-title">Welcome back.</h1>
+        <p>Sign in to review enquiries, notification delivery, and downloadable files.</p>
+        {% if error %}
+        <div class="flash flash-error" role="alert">{{ error }}</div>
+        {% endif %}
+        <form class="login-form" method="post" action="/admin/login">
+            <label>
+                <span>Username</span>
+                <input name="username" type="text" autocomplete="username" required autofocus>
+            </label>
+            <label>
+                <span>Password</span>
+                <input name="password" type="password" autocomplete="current-password" required>
+            </label>
+            <button class="button button-primary button-block" type="submit">
+                Enter operations console
+            </button>
+        </form>
+        <p class="login-note">Protected with a signed, HTTP-only admin session.</p>
+    </section>
+</main>
+{% endblock %}

@@ -17,6 +17,17 @@ def download_directory(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def client(download_directory: Path) -> Iterator[TestClient]:
-    app = create_app(Settings(download_directory=download_directory))
+    temporary_root = download_directory.parent
+    app = create_app(
+        Settings(
+            download_directory=download_directory,
+            database_path=temporary_root / "app.db",
+            seed_database_path=None,
+            admin_username="test-admin",
+            admin_password="unit-test-only-password",
+            session_secret="test-session-secret-that-is-long-enough",
+            cors_allowed_origins=("http://localhost:3000",),
+        )
+    )
     with TestClient(app) as test_client:
         yield test_client

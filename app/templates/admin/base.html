@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>{% block title %}Admin{% endblock %} · CurvatureTech</title>
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    {% block shell %}
+    <header class="topbar">
+        <a class="brand" href="/admin" aria-label="CurvatureTech admin home">
+            <span class="brand-mark">C</span>
+            <span>
+                <strong>CurvatureTech</strong>
+                <small>Operations console</small>
+            </span>
+        </a>
+        <div class="topbar-actions">
+            <span class="secure-pill"><span></span> Secure session</span>
+            <form method="post" action="/admin/logout">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button class="button button-ghost" type="submit">Sign out</button>
+            </form>
+        </div>
+    </header>
+    <main class="shell">
+        {% if flash %}
+        <div class="flash flash-{{ flash.category }}" role="status">
+            {{ flash.message }}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+    {% endblock %}
+    <script src="/static/admin.js" defer></script>
+</body>
+</html>

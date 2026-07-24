@@ -1,2 +1,3 @@
 * text=auto eol=lf
-downloadable_files/** binary
+media/downloadable_files/** binary
+data/*.db binary

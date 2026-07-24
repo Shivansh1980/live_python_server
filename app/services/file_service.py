@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import BinaryIO
 
 from app.domain.models import DownloadableFile
 from app.repositories.contracts import DownloadFileRepository
@@ -15,3 +16,14 @@ class FileService:
 
     def get_file(self, filename: str) -> Path:
         return self._repository.get_file(filename)
+
+    def save_file(
+        self,
+        filename: str,
+        source: BinaryIO,
+        max_bytes: int,
+    ) -> Path:
+        return self._repository.save_file(filename, source, max_bytes)
+
+    def delete_file(self, filename: str) -> None:
+        self._repository.delete_file(filename)

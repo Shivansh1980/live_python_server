@@ -7,6 +7,9 @@ htmlcov/
 .venv/
 venv/
 .env
+data/app.db
+data/app.db-*
+media/downloadable_files/*.uploading
 .idea/
 .vscode/
 *.log

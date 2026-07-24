@@ -1,0 +1,150 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<section class="hero-row">
+    <div>
+        <span class="eyebrow">OPERATIONS OVERVIEW</span>
+        <h1>Good leads deserve a clear next move.</h1>
+        <p>Review new enquiries, track notification delivery, and manage public downloads from one place.</p>
+    </div>
+    <div class="channel-card">
+        <span class="label">Notification channels</span>
+        {% if notification_channels %}
+        <div class="channel-list">
+            {% for channel in notification_channels %}
+            <span class="channel"><i></i>{{ channel|title }}</span>
+            {% endfor %}
+        </div>
+        {% else %}
+        <strong>Database only</strong>
+        <small>Add Discord or Gmail values to <code>.env</code> to enable delivery.</small>
+        {% endif %}
+    </div>
+</section>
+
+<section class="stats-grid" aria-label="Contact statistics">
+    <article class="stat-card stat-accent">
+        <span>Total enquiries</span>
+        <strong>{{ counts.all }}</strong>
+        <small>All saved submissions</small>
+    </article>
+    <article class="stat-card">
+        <span>Needs review</span>
+        <strong>{{ counts.new }}</strong>
+        <small>New and unread</small>
+    </article>
+    <article class="stat-card">
+        <span>Reviewed</span>
+        <strong>{{ counts.read }}</strong>
+        <small>Opened by admin</small>
+    </article>
+    <article class="stat-card">
+        <span>Archived</span>
+        <strong>{{ counts.archived }}</strong>
+        <small>Closed conversations</small>
+    </article>
+</section>
+
+<section class="panel" id="contacts">
+    <div class="panel-header">
+        <div>
+            <span class="eyebrow">CONTACT DATABASE</span>
+            <h2>Enquiries</h2>
+        </div>
+        <form class="filters" method="get" action="/admin">
+            <input name="q" value="{{ query }}" type="search" placeholder="Search name, email, company…">
+            <select name="status" aria-label="Filter contact status">
+                <option value="">All statuses</option>
+                {% for item in contact_statuses %}
+                <option value="{{ item.value }}" {% if status_filter == item.value %}selected{% endif %}>
+                    {{ item.value|title }}
+                </option>
+                {% endfor %}
+            </select>
+            <button class="button button-secondary" type="submit">Filter</button>
+        </form>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Contact</th>
+                    <th>Project</th>
+                    <th>Budget</th>
+                    <th>Received</th>
+                    <th>Status</th>
+                    <th><span class="sr-only">Open</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contact in contacts %}
+                <tr>
+                    <td>
+                        <strong>{{ contact.name }}</strong>
+                        <small>{{ contact.email }}{% if contact.company %} · {{ contact.company }}{% endif %}</small>
+                    </td>
+                    <td>{{ contact.project_type or "Not specified" }}</td>
+                    <td>{{ contact.budget or "Not specified" }}</td>
+                    <td>
+                        <time datetime="{{ contact.created_at.isoformat() }}">
+                            {{ contact.created_at.strftime("%d %b %Y, %H:%M") }}
+                        </time>
+                    </td>
+                    <td><span class="status status-{{ contact.status.value }}">{{ contact.status.value }}</span></td>
+                    <td><a class="row-link" href="/admin/contacts/{{ contact.id }}">Open →</a></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td class="empty-state" colspan="6">
+                        <strong>No enquiries found.</strong>
+                        <span>New form submissions will appear here automatically.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="panel" id="files">
+    <div class="panel-header files-heading">
+        <div>
+            <span class="eyebrow">MEDIA LIBRARY</span>
+            <h2>Downloadable files</h2>
+            <p>Only files stored directly in <code>media/downloadable_files</code> are public.</p>
+        </div>
+        <form class="upload-form" method="post" action="/admin/files/upload" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label class="file-picker">
+                <span>Choose a file</span>
+                <input name="upload" type="file" required>
+            </label>
+            <button class="button button-primary" type="submit">Upload</button>
+            <small>Maximum {{ max_upload_mb }} MB · Existing files are never overwritten</small>
+        </form>
+    </div>
+    <div class="file-grid">
+        {% for file in files %}
+        <article class="file-card">
+            <div class="file-icon">{{ file.name.rsplit(".", 1)[-1][:4]|upper if "." in file.name else "FILE" }}</div>
+            <div class="file-info">
+                <strong title="{{ file.name }}">{{ file.name }}</strong>
+                <small>{{ "%.1f"|format(file.size_bytes / 1024) }} KB · {{ file.modified_at.strftime("%d %b %Y") }}</small>
+            </div>
+            <div class="file-actions">
+                <a class="button button-ghost" href="/api/v1/files/{{ file.name|urlencode }}">Download</a>
+                <form method="post" action="/admin/files/{{ file.name|urlencode }}/delete" data-confirm="Delete '{{ file.name }}'? This cannot be undone.">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button class="button button-danger" type="submit">Delete</button>
+                </form>
+            </div>
+        </article>
+        {% else %}
+        <div class="empty-state file-empty">
+            <strong>No downloadable files.</strong>
+            <span>Upload the first file using the form above.</span>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
