@@ -9,6 +9,9 @@ file downloads, and a lightweight administration portal.
 - Optional Discord webhook and Gmail SMTP notifications are failure-isolated;
   an unavailable notification provider never loses the saved enquiry.
 - A signed-session admin portal manages enquiries and downloadable files.
+- Anonymous website interaction analytics can be paused or resumed by an admin.
+- Analytics records page views, clicks, focus, scrolling, section visibility,
+  and engagement without typed values, cookies, or IP addresses.
 - Files are discovered dynamically from `media/downloadable_files/`.
 - Nested paths, symlinks, traversal attempts, and duplicate uploads are blocked.
 - Application construction, persistence, notifications, and business logic are
@@ -22,6 +25,7 @@ file downloads, and a lightweight administration portal.
 | `GET` | `/` | Service links |
 | `GET` | `/health` | Health check |
 | `POST` | `/api/v1/contact` | Save a contact enquiry |
+| `POST` | `/api/v1/analytics/events` | Record an anonymous website action |
 | `GET` | `/api/v1/files` | List downloadable files |
 | `GET` | `/api/v1/files/{filename}` | Download an exact filename |
 | `GET` | `/admin` | Administration portal |
@@ -82,6 +86,56 @@ if (!response.ok) {
 }
 ```
 
+### Analytics event request
+
+`POST /api/v1/analytics/events` accepts one event per request:
+
+```json
+{
+  "sessionId": "f14a8cb8-0f59-497a-a87a-c32d862923e2",
+  "eventType": "section_view",
+  "pageUrl": "https://example.com/services?campaign=summer",
+  "pageTitle": "Services",
+  "section": "ai-integration",
+  "elementTag": "section",
+  "elementId": "ai-integration",
+  "elementLabel": "AI integration",
+  "durationMs": 12800,
+  "scrollDepth": 72.5,
+  "pointerX": 44.2,
+  "pointerY": 61.8,
+  "viewportWidth": 1440,
+  "viewportHeight": 900,
+  "occurredAt": "2026-07-25T12:00:00Z",
+  "metadata": {
+    "source": "navigation",
+    "visible": true
+  }
+}
+```
+
+Allowed `eventType` values are `page_view`, `navigation`, `click`, `focus`,
+`blur`, `scroll`, `section_view`, and `engagement`. Only `sessionId`,
+`eventType`, and `pageUrl` are required. URL query strings and fragments are
+removed before storage.
+
+The endpoint returns HTTP `202`:
+
+```json
+{"recorded": true, "event_id": 1, "reason": "recorded"}
+```
+
+When the admin pauses collection, the same endpoint returns:
+
+```json
+{"recorded": false, "event_id": null, "reason": "recording_disabled"}
+```
+
+Generate `sessionId` with `crypto.randomUUID()` and retain it in
+`sessionStorage`, not a cookie. Never send input values or typed text. The API
+also rejects metadata keys associated with passwords, tokens, cookies, email,
+phone numbers, messages, and payment-card data.
+
 ## Configuration
 
 Copy `.env.example` to `.env` and replace the placeholders. `.env` is ignored
@@ -92,7 +146,7 @@ APP_ENV=development
 ADMIN_USERNAME=replace-with-admin-username
 ADMIN_PASSWORD="replace-with-a-strong-password"
 SESSION_SECRET="replace-with-a-long-random-value"
-CORS_ALLOWED_ORIGINS="http://localhost:3000,https://your-frontend.example"
+CORS_ALLOWED_ORIGINS="http://localhost:3000,http://127.0.0.1:3000,https://your-frontend.example"
 
 DISCORD_WEBHOOK_URL=
 SMTP_HOST=smtp.gmail.com
@@ -145,9 +199,10 @@ python -m uvicorn app.main:app --reload
 Open `http://127.0.0.1:8000/docs` and
 `http://127.0.0.1:8000/admin`.
 
-The committed `data/app_seed.db` contains only the empty schema. On first
-startup it is copied to the ignored runtime database `data/app.db`. Contact
-data therefore survives application restarts but is not committed.
+The committed `data/app_seed.db` contains only the empty schema and the default
+analytics collection setting. On first startup it is copied to the ignored
+runtime database `data/app.db`. Contact and analytics data therefore survive
+application restarts but are not committed.
 
 ## Downloadable files
 

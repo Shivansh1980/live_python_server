@@ -15,14 +15,17 @@ def _optional_path(value: str | None, default: Path) -> Path:
 
 def _split_origins(value: str | None) -> tuple[str, ...]:
     if not value:
-        return ("http://localhost:3000",)
+        return (
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        )
     return tuple(origin.strip().rstrip("/") for origin in value.split(",") if origin.strip())
 
 
 @dataclass(frozen=True, slots=True)
 class Settings:
     app_name: str = "Downloadable Files API"
-    app_version: str = "2.0.0"
+    app_version: str = "2.1.0"
     environment: str = "development"
     download_directory: Path = PROJECT_ROOT / "media" / "downloadable_files"
     database_path: Path = PROJECT_ROOT / "data" / "app.db"
@@ -32,7 +35,10 @@ class Settings:
     admin_username: str = ""
     admin_password: str = ""
     session_secret: str = "development-only-session-secret"
-    cors_allowed_origins: tuple[str, ...] = ("http://localhost:3000",)
+    cors_allowed_origins: tuple[str, ...] = (
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    )
     max_upload_bytes: int = 25 * 1024 * 1024
     discord_webhook_url: str = ""
     smtp_host: str = "smtp.gmail.com"

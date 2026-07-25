@@ -70,6 +70,7 @@ def test_admin_lists_and_manages_contact(client: TestClient) -> None:
     detail = client.get("/admin/contacts/1")
     assert detail.status_code == 200
     assert "Example Company" in detail.text
+    assert VALID_CONTACT["message"] in detail.text
     assert client.app.state.contact_service.get(1).status.value == "read"
 
     update = client.post(
@@ -171,3 +172,64 @@ def test_admin_upload_rejects_hidden_filename(
 
     assert response.status_code == 303
     assert not (download_directory / ".env").exists()
+
+
+def test_admin_analytics_pages_toggle_and_event_management(
+    client: TestClient,
+) -> None:
+    event = {
+        "sessionId": "admin-test-session",
+        "eventType": "click",
+        "pageUrl": "http://127.0.0.1:3000/#contact",
+        "pageTitle": "CurvatureTech",
+        "section": "contact",
+        "elementTag": "button",
+        "elementId": "contact-submit",
+        "elementLabel": "Start the conversation",
+        "pointerX": 52.5,
+        "pointerY": 81.0,
+        "metadata": {"variant": "primary"},
+    }
+    recorded = client.post("/api/v1/analytics/events", json=event)
+    assert recorded.status_code == 202
+    csrf_token = _login(client)
+
+    listing = client.get("/admin/analytics")
+    assert listing.status_code == 200
+    assert "Recorded actions" in listing.text
+    assert "Start the conversation" in listing.text
+
+    detail = client.get("/admin/analytics/events/1")
+    assert detail.status_code == 200
+    assert "contact-submit" in detail.text
+    assert "primary" in detail.text
+
+    paused = client.post(
+        "/admin/analytics/settings",
+        data={"csrf_token": csrf_token},
+        follow_redirects=False,
+    )
+    assert paused.status_code == 303
+    assert client.app.state.analytics_service.recording_enabled is False
+
+    ignored = client.post("/api/v1/analytics/events", json=event)
+    assert ignored.status_code == 202
+    assert ignored.json()["recorded"] is False
+    assert client.app.state.analytics_service.summary()["total"] == 1
+
+    resumed = client.post(
+        "/admin/analytics/settings",
+        data={"csrf_token": csrf_token, "enabled": "on"},
+        follow_redirects=False,
+    )
+    assert resumed.status_code == 303
+    assert client.app.state.analytics_service.recording_enabled is True
+
+    deleted = client.post(
+        "/admin/analytics/events/1/delete",
+        data={"csrf_token": csrf_token},
+        follow_redirects=False,
+    )
+    assert deleted.status_code == 303
+    assert client.app.state.analytics_service.summary()["total"] == 0
+    assert client.get("/admin/analytics/events/1").status_code == 404

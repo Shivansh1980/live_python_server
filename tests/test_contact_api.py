@@ -63,20 +63,21 @@ def test_contact_endpoint_is_rate_limited(client: TestClient) -> None:
 def test_contact_cors_preflight_allows_configured_frontend(
     client: TestClient,
 ) -> None:
-    response = client.options(
-        "/api/v1/contact",
-        headers={
-            "Origin": "http://localhost:3000",
-            "Access-Control-Request-Method": "POST",
-            "Access-Control-Request-Headers": "content-type",
-        },
-    )
+    for origin in (
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ):
+        response = client.options(
+            "/api/v1/contact",
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
 
-    assert response.status_code == 200
-    assert (
-        response.headers["access-control-allow-origin"]
-        == "http://localhost:3000"
-    )
+        assert response.status_code == 200
+        assert response.headers["access-control-allow-origin"] == origin
 
 
 def test_contact_cors_rejects_unknown_origin(client: TestClient) -> None:

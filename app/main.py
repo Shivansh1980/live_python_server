@@ -7,7 +7,11 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.api.router import api_router
 from app.core.config import Settings, get_settings
 from app.repositories.local_file_repository import LocalFileRepository
+from app.repositories.sqlite_analytics_repository import (
+    SQLiteAnalyticsRepository,
+)
 from app.repositories.sqlite_contact_repository import SQLiteContactRepository
+from app.services.analytics_service import AnalyticsService
 from app.services.auth_service import AdminAuthService
 from app.services.contact_service import ContactService
 from app.services.file_service import FileService
@@ -31,9 +35,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         resolved_settings.database_path,
         resolved_settings.seed_database_path,
     )
+    analytics_repository = SQLiteAnalyticsRepository(
+        resolved_settings.database_path
+    )
     notifications = _build_notification_dispatcher(resolved_settings)
     file_service = FileService(file_repository)
     contact_service = ContactService(contact_repository, notifications)
+    analytics_service = AnalyticsService(analytics_repository)
     admin_auth_service = AdminAuthService(
         resolved_settings.admin_username,
         resolved_settings.admin_password,
@@ -43,8 +51,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title=resolved_settings.app_name,
         version=resolved_settings.app_version,
         description=(
-            "Accepts contact enquiries and securely lists and downloads files "
-            "stored directly in media/downloadable_files."
+            "Accepts contact enquiries, records privacy-conscious website "
+            "analytics, and securely manages downloadable files."
         ),
     )
     application.add_middleware(
@@ -71,10 +79,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.settings = resolved_settings
     application.state.file_service = file_service
     application.state.contact_service = contact_service
+    application.state.analytics_service = analytics_service
     application.state.admin_auth_service = admin_auth_service
     application.state.contact_rate_limiter = SlidingWindowRateLimiter(
         max_requests=5,
         window_seconds=10 * 60,
+    )
+    application.state.analytics_rate_limiter = SlidingWindowRateLimiter(
+        max_requests=120,
+        window_seconds=60,
     )
     application.state.admin_rate_limiter = SlidingWindowRateLimiter(
         max_requests=5,

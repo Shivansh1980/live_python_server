@@ -1,0 +1,144 @@
+{% extends "admin/base.html" %}
+{% block title %}Website analytics{% endblock %}
+{% block content %}
+<section class="hero-row analytics-hero">
+    <div>
+        <span class="eyebrow">BEHAVIOUR ANALYTICS</span>
+        <h1>Understand where attention goes.</h1>
+        <p>Anonymous events reveal visited pages, high-interest sections, clicks, focus, scrolling, and engagement time. Typed values, passwords, cookies, and IP addresses are never recorded.</p>
+    </div>
+    <form class="toggle-card" method="post" action="/admin/analytics/settings">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div>
+            <span class="label">Collection status</span>
+            <strong>{{ "Recording enabled" if recording_enabled else "Recording paused" }}</strong>
+            <small>When paused, the API accepts events but writes nothing.</small>
+        </div>
+        <label class="switch">
+            <input name="enabled" type="checkbox" {% if recording_enabled %}checked{% endif %}>
+            <span aria-hidden="true"></span>
+            <b>{{ "On" if recording_enabled else "Off" }}</b>
+        </label>
+        <button class="button button-secondary" type="submit">Save setting</button>
+    </form>
+</section>
+
+<section class="stats-grid" aria-label="Analytics statistics">
+    <article class="stat-card stat-accent">
+        <span>Total events</span>
+        <strong>{{ summary.total }}</strong>
+        <small>Recorded interactions</small>
+    </article>
+    <article class="stat-card">
+        <span>Anonymous sessions</span>
+        <strong>{{ summary.sessions }}</strong>
+        <small>Distinct client session IDs</small>
+    </article>
+    <article class="stat-card">
+        <span>Average engagement</span>
+        <strong>{{ "%.1f"|format(summary.average_duration_ms / 1000) }}s</strong>
+        <small>Across timed events</small>
+    </article>
+    <article class="stat-card">
+        <span>Average scroll</span>
+        <strong>{{ summary.average_scroll }}%</strong>
+        <small>Across scroll events</small>
+    </article>
+</section>
+
+<section class="insight-grid">
+    <article class="panel insight-card">
+        <span class="eyebrow">TOP ACTIONS</span>
+        {% for item in summary.event_types %}
+        <div class="metric-row"><span>{{ item.name|replace("_", " ")|title }}</span><strong>{{ item.count }}</strong></div>
+        {% else %}
+        <p class="muted">No action data yet.</p>
+        {% endfor %}
+    </article>
+    <article class="panel insight-card">
+        <span class="eyebrow">TOP PAGES</span>
+        {% for item in summary.pages %}
+        <div class="metric-row"><span title="{{ item.name }}">{{ item.name }}</span><strong>{{ item.count }}</strong></div>
+        {% else %}
+        <p class="muted">No page data yet.</p>
+        {% endfor %}
+    </article>
+    <article class="panel insight-card">
+        <span class="eyebrow">TOP SECTIONS</span>
+        {% for item in summary.sections %}
+        <div class="metric-row"><span>{{ item.name }}</span><strong>{{ item.count }}</strong></div>
+        {% else %}
+        <p class="muted">No section data yet.</p>
+        {% endfor %}
+    </article>
+</section>
+
+<section class="panel" id="events">
+    <div class="panel-header">
+        <div>
+            <span class="eyebrow">EVENT DATABASE</span>
+            <h2>Recorded actions</h2>
+        </div>
+        <form class="filters" method="get" action="/admin/analytics">
+            <input name="q" value="{{ query }}" type="search" placeholder="Search session, page, section...">
+            <select name="event_type" aria-label="Filter event type">
+                <option value="">All actions</option>
+                {% for item in event_types %}
+                <option value="{{ item.value }}" {% if event_type_filter == item.value %}selected{% endif %}>
+                    {{ item.value|replace("_", " ")|title }}
+                </option>
+                {% endfor %}
+            </select>
+            <button class="button button-secondary" type="submit">Filter</button>
+        </form>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Page and section</th>
+                    <th>Target</th>
+                    <th>Session</th>
+                    <th>Occurred</th>
+                    <th><span class="sr-only">Open</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                <tr data-row-href="/admin/analytics/events/{{ event.id }}" tabindex="0">
+                    <td><span class="event-badge">{{ event.event_type.value|replace("_", " ") }}</span></td>
+                    <td>
+                        <strong>{{ event.page_title or event.page_url }}</strong>
+                        <small>{{ event.page_url }}{% if event.section %} · {{ event.section }}{% endif %}</small>
+                    </td>
+                    <td>
+                        {{ event.element_label or event.element_id or event.element_tag or "Page" }}
+                        {% if event.duration_ms is not none %}<small>{{ "%.1f"|format(event.duration_ms / 1000) }}s engagement</small>{% endif %}
+                    </td>
+                    <td><code class="session-code">{{ event.session_id }}</code></td>
+                    <td>{{ event.occurred_at.strftime("%d %b %Y, %H:%M:%S") }}</td>
+                    <td><a class="row-link" href="/admin/analytics/events/{{ event.id }}">Open →</a></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td class="empty-state" colspan="6">
+                        <strong>No analytics events found.</strong>
+                        <span>Integrate the POST endpoint and recorded events will appear here.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if events %}
+    <div class="panel-footer danger-footer">
+        <span>Delete all analytics history while keeping the collection setting unchanged.</span>
+        <form method="post" action="/admin/analytics/events/delete-all" data-confirm="Permanently delete every analytics event?">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="button button-danger" type="submit">Delete all events</button>
+        </form>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -45,6 +45,22 @@
     </article>
 </section>
 
+<section class="analytics-callout">
+    <div>
+        <span class="eyebrow">WEBSITE BEHAVIOUR</span>
+        <h2>Anonymous action analytics</h2>
+        <p>See which pages, sections, and interactions receive the most attention without collecting typed values or personal identifiers.</p>
+    </div>
+    <div class="analytics-callout-stats">
+        <span><strong>{{ analytics_summary.total }}</strong> events</span>
+        <span><strong>{{ analytics_summary.sessions }}</strong> sessions</span>
+        <span class="recording-state {% if analytics_recording_enabled %}is-on{% endif %}">
+            {{ "Recording on" if analytics_recording_enabled else "Recording paused" }}
+        </span>
+        <a class="button button-primary" href="/admin/analytics">Open analytics</a>
+    </div>
+</section>
+
 <section class="panel" id="contacts">
     <div class="panel-header">
         <div>
@@ -78,7 +94,7 @@
             </thead>
             <tbody>
                 {% for contact in contacts %}
-                <tr>
+                <tr data-row-href="/admin/contacts/{{ contact.id }}" tabindex="0">
                     <td>
                         <strong>{{ contact.name }}</strong>
                         <small>{{ contact.email }}{% if contact.company %} · {{ contact.company }}{% endif %}</small>

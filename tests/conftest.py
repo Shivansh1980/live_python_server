@@ -26,7 +26,10 @@ def client(download_directory: Path) -> Iterator[TestClient]:
             admin_username="test-admin",
             admin_password="unit-test-only-password",
             session_secret="test-session-secret-that-is-long-enough",
-            cors_allowed_origins=("http://localhost:3000",),
+            cors_allowed_origins=(
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+            ),
         )
     )
     with TestClient(app) as test_client:

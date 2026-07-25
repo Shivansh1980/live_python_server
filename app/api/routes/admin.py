@@ -13,8 +13,15 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse, RedirectResponse
 
+from app.api.admin_support import (
+    flash as _flash,
+    require_admin as _require_admin,
+    template as _template,
+    verify_csrf as _verify_csrf,
+)
 from app.api.dependencies import (
     get_admin_auth_service,
+    get_analytics_service,
     get_contact_service,
     get_file_service,
 )
@@ -28,6 +35,7 @@ from app.domain.exceptions import (
 )
 from app.domain.models import ContactStatus
 from app.services.auth_service import AdminAuthService
+from app.services.analytics_service import AnalyticsService
 from app.services.contact_service import ContactService
 from app.services.file_service import FileService
 
@@ -102,6 +110,7 @@ def dashboard(
     status_filter: Annotated[str, Query(alias="status")] = "",
     contacts: ContactService = Depends(get_contact_service),
     files: FileService = Depends(get_file_service),
+    analytics: AnalyticsService = Depends(get_analytics_service),
 ) -> HTMLResponse:
     _require_admin(request)
     selected_status = _parse_status(status_filter)
@@ -120,6 +129,8 @@ def dashboard(
             "status_filter": selected_status.value if selected_status else "",
             "contact_statuses": tuple(ContactStatus),
             "notification_channels": contacts.configured_notification_channels,
+            "analytics_recording_enabled": analytics.recording_enabled,
+            "analytics_summary": analytics.summary(),
             "flash": request.session.pop("flash", None),
             "csrf_token": request.session["csrf_token"],
             "max_upload_mb": (
@@ -249,27 +260,6 @@ def delete_file(
     return RedirectResponse("/admin#files", status_code=status.HTTP_303_SEE_OTHER)
 
 
-def _require_admin(request: Request) -> None:
-    if not request.session.get("admin_authenticated"):
-        raise HTTPException(
-            status_code=status.HTTP_303_SEE_OTHER,
-            headers={"Location": "/admin/login"},
-        )
-
-
-def _verify_csrf(
-    request: Request,
-    supplied_token: str,
-    auth: AdminAuthService,
-) -> None:
-    expected_token = str(request.session.get("csrf_token", ""))
-    if not auth.verify_csrf(expected_token, supplied_token):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid CSRF token.",
-        )
-
-
 def _parse_status(value: str) -> ContactStatus | None:
     if not value:
         return None
@@ -277,21 +267,3 @@ def _parse_status(value: str) -> ContactStatus | None:
         return ContactStatus(value)
     except ValueError:
         return None
-
-
-def _template(
-    request: Request,
-    name: str,
-    context: dict[str, object],
-    status_code: int = status.HTTP_200_OK,
-) -> HTMLResponse:
-    return request.app.state.templates.TemplateResponse(
-        request=request,
-        name=name,
-        context=context,
-        status_code=status_code,
-    )
-
-
-def _flash(request: Request, message: str, category: str) -> None:
-    request.session["flash"] = {"message": message, "category": category}

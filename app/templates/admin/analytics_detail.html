@@ -1,0 +1,58 @@
+{% extends "admin/base.html" %}
+{% block title %}Analytics event #{{ event.id }}{% endblock %}
+{% block content %}
+<a class="back-link" href="/admin/analytics">← Back to analytics</a>
+<section class="detail-layout">
+    <article class="panel detail-main">
+        <div class="detail-heading">
+            <div>
+                <span class="eyebrow">EVENT #{{ event.id }}</span>
+                <h1>{{ event.event_type.value|replace("_", " ")|title }}</h1>
+                <span class="muted">{{ event.page_title or event.page_url }}</span>
+            </div>
+            <span class="event-badge">{{ event.event_type.value|replace("_", " ") }}</span>
+        </div>
+        <dl class="detail-grid analytics-detail-grid">
+            <div><dt>Page URL</dt><dd>{{ event.page_url }}</dd></div>
+            <div><dt>Section</dt><dd>{{ event.section or "Not supplied" }}</dd></div>
+            <div><dt>Element</dt><dd>{{ event.element_tag or "Page" }}{% if event.element_id %}#{{ event.element_id }}{% endif %}</dd></div>
+            <div><dt>Element label</dt><dd>{{ event.element_label or "Not supplied" }}</dd></div>
+            <div><dt>Engagement time</dt><dd>{{ event.duration_ms ~ " ms" if event.duration_ms is not none else "Not supplied" }}</dd></div>
+            <div><dt>Scroll depth</dt><dd>{{ event.scroll_depth ~ "%" if event.scroll_depth is not none else "Not supplied" }}</dd></div>
+            <div><dt>Pointer position</dt><dd>{% if event.pointer_x is not none %}{{ event.pointer_x }}%, {{ event.pointer_y }}%{% else %}Not supplied{% endif %}</dd></div>
+            <div><dt>Viewport</dt><dd>{% if event.viewport_width %}{{ event.viewport_width }} × {{ event.viewport_height }}{% else %}Not supplied{% endif %}</dd></div>
+            <div><dt>Occurred</dt><dd>{{ event.occurred_at.strftime("%d %B %Y at %H:%M:%S UTC") }}</dd></div>
+            <div><dt>Received</dt><dd>{{ event.created_at.strftime("%d %B %Y at %H:%M:%S UTC") }}</dd></div>
+        </dl>
+        <div class="message-block">
+            <span class="label">Anonymous session ID</span>
+            <code>{{ event.session_id }}</code>
+        </div>
+        <div class="delivery-block">
+            <span class="label">Safe custom metadata</span>
+            {% if metadata %}
+            <dl class="metadata-grid">
+                {% for key, value in metadata.items() %}
+                <div><dt>{{ key }}</dt><dd>{{ value }}</dd></div>
+                {% endfor %}
+            </dl>
+            {% else %}
+            <span class="muted">No custom metadata supplied.</span>
+            {% endif %}
+        </div>
+        <div class="delivery-block">
+            <span class="label">Browser user agent</span>
+            <code>{{ event.user_agent or "Not supplied" }}</code>
+        </div>
+    </article>
+    <aside class="panel detail-actions">
+        <span class="eyebrow">MANAGE EVENT</span>
+        <h2>Event controls</h2>
+        <p class="muted">This record contains no IP address, cookies, or typed form values.</p>
+        <form method="post" action="/admin/analytics/events/{{ event.id }}/delete" data-confirm="Permanently delete this analytics event?">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="button button-danger button-block" type="submit">Delete event</button>
+        </form>
+    </aside>
+</section>
+{% endblock %}

@@ -10,6 +10,7 @@ def service_information() -> dict[str, str]:
         "health": "/health",
         "files": "/api/v1/files",
         "contact": "/api/v1/contact",
+        "analytics": "/api/v1/analytics/events",
         "admin": "/admin",
         "documentation": "/docs",
     }

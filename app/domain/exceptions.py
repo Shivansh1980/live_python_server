@@ -20,3 +20,7 @@ class FileTooLargeError(FileServiceError):
 
 class ContactNotFoundError(Exception):
     """Raised when an admin operation targets an unknown contact."""
+
+
+class AnalyticsEventNotFoundError(Exception):
+    """Raised when an admin operation targets an unknown analytics event."""

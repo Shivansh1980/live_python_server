@@ -2,6 +2,9 @@
 
 from pathlib import Path
 
+from app.repositories.sqlite_analytics_repository import (
+    SQLiteAnalyticsRepository,
+)
 from app.repositories.sqlite_contact_repository import SQLiteContactRepository
 
 
@@ -13,6 +16,7 @@ def main() -> None:
     if SEED_DATABASE.exists():
         SEED_DATABASE.unlink()
     SQLiteContactRepository(SEED_DATABASE, seed_database_path=None)
+    SQLiteAnalyticsRepository(SEED_DATABASE)
     print(f"Created empty seed database: {SEED_DATABASE}")
 
 

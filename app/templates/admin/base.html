@@ -19,6 +19,10 @@
                 <small>Operations console</small>
             </span>
         </a>
+        <nav class="admin-nav" aria-label="Admin sections">
+            <a href="/admin" {% if request.url.path == "/admin" %}aria-current="page"{% endif %}>Enquiries</a>
+            <a href="/admin/analytics" {% if request.url.path.startswith("/admin/analytics") %}aria-current="page"{% endif %}>Analytics</a>
+        </nav>
         <div class="topbar-actions">
             <span class="secure-pill"><span></span> Secure session</span>
             <form method="post" action="/admin/logout">
