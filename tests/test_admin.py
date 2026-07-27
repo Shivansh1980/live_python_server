@@ -233,3 +233,85 @@ def test_admin_analytics_pages_toggle_and_event_management(
     assert deleted.status_code == 303
     assert client.app.state.analytics_service.summary()["total"] == 0
     assert client.get("/admin/analytics/events/1").status_code == 404
+
+
+def test_admin_manages_payload_config_rows(client: TestClient) -> None:
+    csrf_token = _login(client)
+
+    created = client.post(
+        "/admin/payload-configs",
+        data={
+            "csrf_token": csrf_token,
+            "url": "https://example.com/payload-v1",
+            "remote_host": "edge.example.com",
+            "remote_port": "443",
+            "user_ip_address": "203.0.113.70",
+            "user_host_name": "workstation-70",
+            "should_replace_payload": "on",
+            "is_active": "on",
+        },
+        follow_redirects=False,
+    )
+
+    assert created.status_code == 303
+    assert created.headers["location"] == "/admin/payload-configs/1"
+    listing = client.get("/admin/payload-configs")
+    assert listing.status_code == 200
+    assert "203.0.113.70" in listing.text
+    assert "workstation-70" in listing.text
+    assert 'data-row-href="/admin/payload-configs/1"' in listing.text
+
+    detail = client.get("/admin/payload-configs/1")
+    assert detail.status_code == 200
+    assert "https://example.com/payload-v1" in detail.text
+    assert "edge.example.com" in detail.text
+
+    updated = client.post(
+        "/admin/payload-configs/1",
+        data={
+            "csrf_token": csrf_token,
+            "url": "https://example.com/payload-v2",
+            "remote_host": "new-edge.example.com",
+            "remote_port": "8443",
+            "user_ip_address": "203.0.113.70",
+            "user_host_name": "workstation-70-updated",
+        },
+        follow_redirects=False,
+    )
+    assert updated.status_code == 303
+    stored = client.app.state.payload_config_service.get(1)
+    assert stored.url == "https://example.com/payload-v2"
+    assert stored.remote_port == 8443
+    assert stored.should_replace_payload is False
+    assert stored.is_active is False
+
+    deleted = client.post(
+        "/admin/payload-configs/1/delete",
+        data={"csrf_token": csrf_token},
+        follow_redirects=False,
+    )
+    assert deleted.status_code == 303
+    assert client.get("/admin/payload-configs/1").status_code == 404
+
+
+def test_admin_payload_config_validation_preserves_database(
+    client: TestClient,
+) -> None:
+    csrf_token = _login(client)
+
+    response = client.post(
+        "/admin/payload-configs",
+        data={
+            "csrf_token": csrf_token,
+            "url": "https://example.com/payload",
+            "remote_host": "edge.example.com",
+            "remote_port": "70000",
+            "user_ip_address": "not-an-ip",
+            "user_host_name": "workstation",
+            "is_active": "on",
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert client.app.state.payload_config_service.list() == []

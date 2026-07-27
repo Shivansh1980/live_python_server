@@ -26,6 +26,8 @@ file downloads, and a lightweight administration portal.
 | `GET` | `/health` | Health check |
 | `POST` | `/api/v1/contact` | Save a contact enquiry |
 | `POST` | `/api/v1/analytics/events` | Record an anonymous website action |
+| `GET` | `/api/v1/payloadconfig/?user_ip_address={ip}` | Get the newest active payload configuration for an IP |
+| `POST` | `/api/v1/payloadconfig/` | Update replacement for one user or every row |
 | `GET` | `/api/v1/files` | List downloadable files |
 | `GET` | `/api/v1/files/{filename}` | Download an exact filename |
 | `GET` | `/admin` | Administration portal |
@@ -135,6 +137,51 @@ Generate `sessionId` with `crypto.randomUUID()` and retain it in
 `sessionStorage`, not a cookie. Never send input values or typed text. The API
 also rejects metadata keys associated with passwords, tokens, cookies, email,
 phone numbers, messages, and payment-card data.
+
+### Payload configuration
+
+Payload configuration fields use `snake_case` consistently in the database and
+API. `GET /api/v1/payloadconfig/` requires a `user_ip_address` query parameter
+and returns the newest active matching row:
+
+```http
+GET /api/v1/payloadconfig/?user_ip_address=203.0.113.10
+```
+
+```json
+{
+  "id": 4,
+  "should_replace_payload": false,
+  "url": "https://example.com/resource",
+  "remote_host": "edge.example.com",
+  "remote_port": 443,
+  "user_ip_address": "203.0.113.10",
+  "user_host_name": "workstation-10",
+  "is_active": true,
+  "created_at": "2026-07-28T10:00:00Z",
+  "updated_at": "2026-07-28T10:00:00Z"
+}
+```
+
+`POST /api/v1/payloadconfig/` changes `should_replace_payload`:
+
+```json
+{
+  "user_ip_address": "203.0.113.10",
+  "should_replace_payload": true
+}
+```
+
+Selection precedence is:
+
+1. `user_ip_address`: update the newest active row for that IP.
+2. Otherwise `user_host_name`: update the newest active row for that hostname.
+3. Neither identifier: update every row, including inactive rows.
+
+`should_replace_payload` defaults to `false` when omitted. An empty request
+body therefore sets every row to `false`. If both identifiers are provided,
+`user_ip_address` takes precedence. A targeted update returns HTTP `404` when
+no active match exists. All rows are also editable from `/admin/payload-configs`.
 
 ## Configuration
 

@@ -24,3 +24,7 @@ class ContactNotFoundError(Exception):
 
 class AnalyticsEventNotFoundError(Exception):
     """Raised when an admin operation targets an unknown analytics event."""
+
+
+class PayloadConfigNotFoundError(Exception):
+    """Raised when a payload configuration cannot be found."""

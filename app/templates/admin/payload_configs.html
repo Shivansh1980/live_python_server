@@ -1,0 +1,105 @@
+{% extends "admin/base.html" %}
+{% block title %}Payload configurations{% endblock %}
+{% block content %}
+<section class="hero-row">
+    <div>
+        <span class="eyebrow">PAYLOAD CONFIGURATION</span>
+        <h1>Control user-specific delivery settings.</h1>
+        <p>Create multiple configurations per user. Public lookups and targeted updates always select the newest active matching row.</p>
+    </div>
+    <div class="channel-card">
+        <span class="label">API behavior</span>
+        <strong>IP, then hostname, then all rows</strong>
+        <small>The POST endpoint uses the most specific identifier supplied.</small>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <span class="eyebrow">NEW CONFIGURATION</span>
+            <h2>Add a payload configuration</h2>
+        </div>
+    </div>
+    <form class="config-form config-form-create" method="post" action="/admin/payload-configs">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label>
+            <span>User IP address</span>
+            <input name="user_ip_address" required maxlength="45" placeholder="203.0.113.10">
+        </label>
+        <label>
+            <span>User hostname</span>
+            <input name="user_host_name" required maxlength="253" placeholder="workstation-01">
+        </label>
+        <label class="config-span-two">
+            <span>URL</span>
+            <input name="url" required maxlength="2048" placeholder="https://example.com/resource">
+        </label>
+        <label>
+            <span>Remote host</span>
+            <input name="remote_host" required maxlength="253" placeholder="edge.example.com">
+        </label>
+        <label>
+            <span>Remote port</span>
+            <input name="remote_port" required type="number" min="1" max="65535" placeholder="443">
+        </label>
+        <label class="check-card">
+            <input name="should_replace_payload" type="checkbox">
+            <span><strong>Replace payload</strong><small>Enable replacement for this configuration.</small></span>
+        </label>
+        <label class="check-card">
+            <input name="is_active" type="checkbox" checked>
+            <span><strong>Active</strong><small>Allow public lookup and targeted updates.</small></span>
+        </label>
+        <div class="config-actions config-span-two">
+            <button class="button button-primary" type="submit">Create configuration</button>
+        </div>
+    </form>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <span class="eyebrow">DATABASE ROWS</span>
+            <h2>Payload configurations</h2>
+        </div>
+        <form class="filters" method="get" action="/admin/payload-configs">
+            <input name="q" value="{{ query }}" type="search" placeholder="Search IP, hostname, remote host...">
+            <button class="button button-secondary" type="submit">Search</button>
+        </form>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Remote destination</th>
+                    <th>Replace payload</th>
+                    <th>State</th>
+                    <th>Updated</th>
+                    <th><span class="sr-only">Open</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in payload_configs %}
+                <tr data-row-href="/admin/payload-configs/{{ item.id }}" tabindex="0">
+                    <td><strong>{{ item.user_ip_address }}</strong><small>{{ item.user_host_name }}</small></td>
+                    <td><strong>{{ item.remote_host }}:{{ item.remote_port }}</strong><small class="truncate-cell">{{ item.url }}</small></td>
+                    <td><span class="status {{ 'status-read' if item.should_replace_payload else 'status-archived' }}">{{ "Yes" if item.should_replace_payload else "No" }}</span></td>
+                    <td><span class="status {{ 'status-read' if item.is_active else 'status-archived' }}">{{ "Active" if item.is_active else "Inactive" }}</span></td>
+                    <td>{{ item.updated_at.strftime("%d %b %Y, %H:%M") }}</td>
+                    <td><a class="row-link" href="/admin/payload-configs/{{ item.id }}">Open →</a></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td class="empty-state" colspan="6">
+                        <strong>No payload configurations found.</strong>
+                        <span>Create the first row using the form above.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -11,6 +11,7 @@ def service_information() -> dict[str, str]:
         "files": "/api/v1/files",
         "contact": "/api/v1/contact",
         "analytics": "/api/v1/analytics/events",
+        "payload_config": "/api/v1/payloadconfig/",
         "admin": "/admin",
         "documentation": "/docs",
     }

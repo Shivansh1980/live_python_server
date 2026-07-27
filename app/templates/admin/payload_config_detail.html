@@ -1,0 +1,64 @@
+{% extends "admin/base.html" %}
+{% block title %}Payload configuration #{{ payload_config.id }}{% endblock %}
+{% block content %}
+<a class="back-link" href="/admin/payload-configs">← Back to payload configurations</a>
+<section class="detail-layout">
+    <article class="panel detail-main">
+        <div class="detail-heading">
+            <div>
+                <span class="eyebrow">CONFIGURATION #{{ payload_config.id }}</span>
+                <h1>{{ payload_config.user_host_name }}</h1>
+                <span class="muted">{{ payload_config.user_ip_address }}</span>
+            </div>
+            <span class="status {{ 'status-read' if payload_config.is_active else 'status-archived' }}">{{ "Active" if payload_config.is_active else "Inactive" }}</span>
+        </div>
+        <form class="config-form" method="post" action="/admin/payload-configs/{{ payload_config.id }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label>
+                <span>User IP address</span>
+                <input name="user_ip_address" required maxlength="45" value="{{ payload_config.user_ip_address }}">
+            </label>
+            <label>
+                <span>User hostname</span>
+                <input name="user_host_name" required maxlength="253" value="{{ payload_config.user_host_name }}">
+            </label>
+            <label class="config-span-two">
+                <span>URL</span>
+                <input name="url" required maxlength="2048" value="{{ payload_config.url }}">
+            </label>
+            <label>
+                <span>Remote host</span>
+                <input name="remote_host" required maxlength="253" value="{{ payload_config.remote_host }}">
+            </label>
+            <label>
+                <span>Remote port</span>
+                <input name="remote_port" required type="number" min="1" max="65535" value="{{ payload_config.remote_port }}">
+            </label>
+            <label class="check-card">
+                <input name="should_replace_payload" type="checkbox" {% if payload_config.should_replace_payload %}checked{% endif %}>
+                <span><strong>Replace payload</strong><small>Current user-specific replacement state.</small></span>
+            </label>
+            <label class="check-card">
+                <input name="is_active" type="checkbox" {% if payload_config.is_active %}checked{% endif %}>
+                <span><strong>Active</strong><small>Eligible for public GET and targeted POST requests.</small></span>
+            </label>
+            <div class="config-actions config-span-two">
+                <button class="button button-primary" type="submit">Save all changes</button>
+            </div>
+        </form>
+    </article>
+    <aside class="panel detail-actions">
+        <span class="eyebrow">ROW DETAILS</span>
+        <h2>Database metadata</h2>
+        <dl class="side-metadata">
+            <div><dt>Created</dt><dd>{{ payload_config.created_at.strftime("%d %b %Y, %H:%M:%S UTC") }}</dd></div>
+            <div><dt>Updated</dt><dd>{{ payload_config.updated_at.strftime("%d %b %Y, %H:%M:%S UTC") }}</dd></div>
+        </dl>
+        <hr>
+        <form method="post" action="/admin/payload-configs/{{ payload_config.id }}/delete" data-confirm="Permanently delete this payload configuration?">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="button button-danger button-block" type="submit">Delete configuration</button>
+        </form>
+    </aside>
+</section>
+{% endblock %}

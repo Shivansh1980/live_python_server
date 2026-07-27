@@ -11,6 +11,9 @@ from app.repositories.sqlite_analytics_repository import (
     SQLiteAnalyticsRepository,
 )
 from app.repositories.sqlite_contact_repository import SQLiteContactRepository
+from app.repositories.sqlite_payload_config_repository import (
+    SQLitePayloadConfigRepository,
+)
 from app.services.analytics_service import AnalyticsService
 from app.services.auth_service import AdminAuthService
 from app.services.contact_service import ContactService
@@ -20,6 +23,7 @@ from app.services.notification_service import (
     GmailSmtpNotifier,
     NotificationDispatcher,
 )
+from app.services.payload_config_service import PayloadConfigService
 from app.services.rate_limiter import SlidingWindowRateLimiter
 
 
@@ -38,10 +42,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     analytics_repository = SQLiteAnalyticsRepository(
         resolved_settings.database_path
     )
+    payload_config_repository = SQLitePayloadConfigRepository(
+        resolved_settings.database_path
+    )
     notifications = _build_notification_dispatcher(resolved_settings)
     file_service = FileService(file_repository)
     contact_service = ContactService(contact_repository, notifications)
     analytics_service = AnalyticsService(analytics_repository)
+    payload_config_service = PayloadConfigService(payload_config_repository)
     admin_auth_service = AdminAuthService(
         resolved_settings.admin_username,
         resolved_settings.admin_password,
@@ -52,7 +60,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version=resolved_settings.app_version,
         description=(
             "Accepts contact enquiries, records privacy-conscious website "
-            "analytics, and securely manages downloadable files."
+            "analytics, payload configurations, and securely manages "
+            "downloadable files."
         ),
     )
     application.add_middleware(
@@ -80,6 +89,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.file_service = file_service
     application.state.contact_service = contact_service
     application.state.analytics_service = analytics_service
+    application.state.payload_config_service = payload_config_service
     application.state.admin_auth_service = admin_auth_service
     application.state.contact_rate_limiter = SlidingWindowRateLimiter(
         max_requests=5,

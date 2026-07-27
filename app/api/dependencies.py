@@ -4,6 +4,7 @@ from app.services.analytics_service import AnalyticsService
 from app.services.auth_service import AdminAuthService
 from app.services.contact_service import ContactService
 from app.services.file_service import FileService
+from app.services.payload_config_service import PayloadConfigService
 from app.services.rate_limiter import SlidingWindowRateLimiter
 
 
@@ -18,6 +19,10 @@ def get_contact_service(request: Request) -> ContactService:
 
 def get_analytics_service(request: Request) -> AnalyticsService:
     return request.app.state.analytics_service
+
+
+def get_payload_config_service(request: Request) -> PayloadConfigService:
+    return request.app.state.payload_config_service
 
 
 def get_admin_auth_service(request: Request) -> AdminAuthService:
