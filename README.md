@@ -152,7 +152,6 @@ GET /api/v1/payloadconfig/?user_ip_address=203.0.113.10
 {
   "id": 4,
   "should_replace_payload": false,
-  "url": "https://example.com/resource",
   "remote_host": "edge.example.com",
   "remote_port": 443,
   "user_ip_address": "203.0.113.10",

@@ -380,7 +380,6 @@ dd { margin: 0; font-weight: 700; }
 .check-card strong, .check-card small { display: block; }
 .check-card small { margin-top: 5px; color: var(--muted); font-weight: 400; line-height: 1.4; }
 .config-actions { display: flex; justify-content: flex-end; padding-top: 4px; }
-.truncate-cell { max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .side-metadata { margin: 20px 0 0; }
 .side-metadata div { padding: 12px 0; border-bottom: 1px solid var(--line); }
 .side-metadata dd { overflow-wrap: anywhere; font-size: 0.83rem; }

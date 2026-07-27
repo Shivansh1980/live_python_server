@@ -1,5 +1,11 @@
+import sqlite3
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
+from app.repositories.sqlite_payload_config_repository import (
+    SQLitePayloadConfigRepository,
+)
 from app.schemas.payload_config import PayloadConfigInput
 
 
@@ -10,12 +16,10 @@ def _create_payload_config(
     user_host_name: str,
     should_replace_payload: bool = False,
     is_active: bool = True,
-    url: str = "https://example.com/payload",
 ):
     return client.app.state.payload_config_service.create(
         PayloadConfigInput(
             should_replace_payload=should_replace_payload,
-            url=url,
             remote_host="edge.example.com",
             remote_port=443,
             user_ip_address=user_ip_address,
@@ -30,20 +34,17 @@ def test_get_returns_newest_active_row_for_ip(client: TestClient) -> None:
         client,
         user_ip_address="203.0.113.10",
         user_host_name="first-host",
-        url="https://example.com/first",
     )
     latest = _create_payload_config(
         client,
         user_ip_address="203.0.113.10",
         user_host_name="latest-host",
-        url="https://example.com/latest",
     )
     _create_payload_config(
         client,
         user_ip_address="203.0.113.10",
         user_host_name="inactive-host",
         is_active=False,
-        url="https://example.com/inactive",
     )
 
     response = client.get(
@@ -53,7 +54,7 @@ def test_get_returns_newest_active_row_for_ip(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert response.json()["id"] == latest.id
-    assert response.json()["url"] == "https://example.com/latest"
+    assert "url" not in response.json()
     assert response.json()["id"] != first.id
     assert response.json()["is_active"] is True
 
@@ -240,3 +241,64 @@ def test_post_rejects_removed_status_field_without_updating_rows(
         ).should_replace_payload
         is True
     )
+
+
+def test_repository_migrates_legacy_url_column_without_data_loss(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "legacy.db"
+    with sqlite3.connect(database_path) as connection:
+        connection.executescript(
+            """
+            CREATE TABLE payload_configs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                should_replace_payload INTEGER NOT NULL,
+                url TEXT NOT NULL,
+                remote_host TEXT NOT NULL,
+                remote_port INTEGER NOT NULL,
+                user_ip_address TEXT NOT NULL,
+                user_host_name TEXT NOT NULL,
+                is_active INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            CREATE INDEX idx_payload_configs_ip_active_latest
+                ON payload_configs(
+                    user_ip_address, is_active, created_at DESC, id DESC
+                );
+            CREATE INDEX idx_payload_configs_updated_at
+                ON payload_configs(updated_at DESC);
+            INSERT INTO payload_configs (
+                should_replace_payload, url, remote_host, remote_port,
+                user_ip_address, user_host_name, is_active, created_at,
+                updated_at
+            ) VALUES (
+                1, 'https://obsolete.example/payload', 'edge.example.com',
+                8443, '203.0.113.90', 'legacy-host', 1,
+                '2026-07-28T10:00:00+00:00',
+                '2026-07-28T10:05:00+00:00'
+            );
+            """
+        )
+
+    repository = SQLitePayloadConfigRepository(database_path)
+    migrated = repository.get(1)
+
+    assert migrated is not None
+    assert migrated.should_replace_payload is True
+    assert migrated.remote_host == "edge.example.com"
+    assert migrated.remote_port == 8443
+    assert migrated.user_ip_address == "203.0.113.90"
+    assert migrated.user_host_name == "legacy-host"
+    with sqlite3.connect(database_path) as connection:
+        columns = {
+            row[1]
+            for row in connection.execute(
+                "PRAGMA table_info(payload_configs)"
+            ).fetchall()
+        }
+        integrity = connection.execute(
+            "PRAGMA integrity_check"
+        ).fetchone()[0]
+    assert "url" not in columns
+    assert integrity == "ok"

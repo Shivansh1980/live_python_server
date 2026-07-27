@@ -31,10 +31,6 @@
             <span>User hostname</span>
             <input name="user_host_name" required maxlength="253" placeholder="workstation-01">
         </label>
-        <label class="config-span-two">
-            <span>URL</span>
-            <input name="url" required maxlength="2048" placeholder="https://example.com/resource">
-        </label>
         <label>
             <span>Remote host</span>
             <input name="remote_host" required maxlength="253" placeholder="edge.example.com">
@@ -84,7 +80,7 @@
                 {% for item in payload_configs %}
                 <tr data-row-href="/admin/payload-configs/{{ item.id }}" tabindex="0">
                     <td><strong>{{ item.user_ip_address }}</strong><small>{{ item.user_host_name }}</small></td>
-                    <td><strong>{{ item.remote_host }}:{{ item.remote_port }}</strong><small class="truncate-cell">{{ item.url }}</small></td>
+                    <td><strong>{{ item.remote_host }}:{{ item.remote_port }}</strong></td>
                     <td><span class="status {{ 'status-read' if item.should_replace_payload else 'status-archived' }}">{{ "Yes" if item.should_replace_payload else "No" }}</span></td>
                     <td><span class="status {{ 'status-read' if item.is_active else 'status-archived' }}">{{ "Active" if item.is_active else "Inactive" }}</span></td>
                     <td>{{ item.updated_at.strftime("%d %b %Y, %H:%M") }}</td>

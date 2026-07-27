@@ -11,7 +11,6 @@ class PayloadConfigInput(BaseModel):
     )
 
     should_replace_payload: bool = False
-    url: Annotated[str, Field(min_length=1, max_length=2048)]
     remote_host: Annotated[str, Field(min_length=1, max_length=253)]
     remote_port: Annotated[int, Field(ge=1, le=65535)]
     user_ip_address: Annotated[str, Field(max_length=45)]
@@ -32,7 +31,6 @@ class PayloadConfigResponse(BaseModel):
 
     id: int
     should_replace_payload: bool
-    url: str
     remote_host: str
     remote_port: int
     user_ip_address: str

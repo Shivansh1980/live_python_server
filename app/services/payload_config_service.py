@@ -121,7 +121,6 @@ class PayloadConfigService:
     ) -> NewPayloadConfig:
         return NewPayloadConfig(
             should_replace_payload=payload.should_replace_payload,
-            url=payload.url,
             remote_host=payload.remote_host,
             remote_port=payload.remote_port,
             user_ip_address=payload.user_ip_address,

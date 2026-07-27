@@ -242,7 +242,6 @@ def test_admin_manages_payload_config_rows(client: TestClient) -> None:
         "/admin/payload-configs",
         data={
             "csrf_token": csrf_token,
-            "url": "https://example.com/payload-v1",
             "remote_host": "edge.example.com",
             "remote_port": "443",
             "user_ip_address": "203.0.113.70",
@@ -263,14 +262,12 @@ def test_admin_manages_payload_config_rows(client: TestClient) -> None:
 
     detail = client.get("/admin/payload-configs/1")
     assert detail.status_code == 200
-    assert "https://example.com/payload-v1" in detail.text
     assert "edge.example.com" in detail.text
 
     updated = client.post(
         "/admin/payload-configs/1",
         data={
             "csrf_token": csrf_token,
-            "url": "https://example.com/payload-v2",
             "remote_host": "new-edge.example.com",
             "remote_port": "8443",
             "user_ip_address": "203.0.113.70",
@@ -280,7 +277,7 @@ def test_admin_manages_payload_config_rows(client: TestClient) -> None:
     )
     assert updated.status_code == 303
     stored = client.app.state.payload_config_service.get(1)
-    assert stored.url == "https://example.com/payload-v2"
+    assert stored.remote_host == "new-edge.example.com"
     assert stored.remote_port == 8443
     assert stored.should_replace_payload is False
     assert stored.is_active is False
@@ -303,7 +300,6 @@ def test_admin_payload_config_validation_preserves_database(
         "/admin/payload-configs",
         data={
             "csrf_token": csrf_token,
-            "url": "https://example.com/payload",
             "remote_host": "edge.example.com",
             "remote_port": "70000",
             "user_ip_address": "not-an-ip",

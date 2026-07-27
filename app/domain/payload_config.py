@@ -5,7 +5,6 @@ from datetime import datetime
 @dataclass(frozen=True, slots=True)
 class NewPayloadConfig:
     should_replace_payload: bool
-    url: str
     remote_host: str
     remote_port: int
     user_ip_address: str
@@ -17,7 +16,6 @@ class NewPayloadConfig:
 class PayloadConfig:
     id: int
     should_replace_payload: bool
-    url: str
     remote_host: str
     remote_port: int
     user_ip_address: str

@@ -6,12 +6,11 @@ from pathlib import Path
 
 from app.domain.payload_config import NewPayloadConfig, PayloadConfig
 
-SCHEMA = """
+TABLE_SCHEMA = """
 CREATE TABLE IF NOT EXISTS payload_configs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     should_replace_payload INTEGER NOT NULL DEFAULT 0
         CHECK (should_replace_payload IN (0, 1)),
-    url TEXT NOT NULL,
     remote_host TEXT NOT NULL,
     remote_port INTEGER NOT NULL
         CHECK (remote_port BETWEEN 1 AND 65535),
@@ -22,7 +21,9 @@ CREATE TABLE IF NOT EXISTS payload_configs (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
+"""
 
+INDEX_SCHEMA = """
 CREATE INDEX IF NOT EXISTS idx_payload_configs_ip_active_latest
     ON payload_configs(user_ip_address, is_active, created_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_payload_configs_updated_at
@@ -37,7 +38,9 @@ class SQLitePayloadConfigRepository:
         self._database_path = database_path
         self._database_path.parent.mkdir(parents=True, exist_ok=True)
         with self._connection() as connection:
-            connection.executescript(SCHEMA)
+            connection.execute(TABLE_SCHEMA)
+            self._remove_obsolete_url_column(connection)
+            connection.executescript(INDEX_SCHEMA)
             connection.commit()
 
     def create(self, payload_config: NewPayloadConfig) -> PayloadConfig:
@@ -46,14 +49,13 @@ class SQLitePayloadConfigRepository:
             cursor = connection.execute(
                 """
                 INSERT INTO payload_configs (
-                    should_replace_payload, url, remote_host, remote_port,
+                    should_replace_payload, remote_host, remote_port,
                     user_ip_address, user_host_name, is_active, created_at,
                     updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     int(payload_config.should_replace_payload),
-                    payload_config.url,
                     payload_config.remote_host,
                     payload_config.remote_port,
                     payload_config.user_ip_address,
@@ -106,10 +108,10 @@ class SQLitePayloadConfigRepository:
         if search:
             where_clause = """
                 WHERE user_ip_address LIKE ? OR user_host_name LIKE ?
-                    OR remote_host LIKE ? OR url LIKE ?
+                    OR remote_host LIKE ?
             """
             term = f"%{search}%"
-            parameters.extend([term, term, term, term])
+            parameters.extend([term, term, term])
         parameters.append(max(1, min(limit, 500)))
         with self._connection() as connection:
             rows = connection.execute(
@@ -133,14 +135,13 @@ class SQLitePayloadConfigRepository:
             cursor = connection.execute(
                 """
                 UPDATE payload_configs
-                SET should_replace_payload = ?, url = ?, remote_host = ?,
-                    remote_port = ?, user_ip_address = ?,
-                    user_host_name = ?, is_active = ?, updated_at = ?
+                SET should_replace_payload = ?, remote_host = ?,
+                    remote_port = ?, user_ip_address = ?, user_host_name = ?,
+                    is_active = ?, updated_at = ?
                 WHERE id = ?
                 """,
                 (
                     int(payload_config.should_replace_payload),
-                    payload_config.url,
                     payload_config.remote_host,
                     payload_config.remote_port,
                     payload_config.user_ip_address,
@@ -256,6 +257,52 @@ class SQLitePayloadConfigRepository:
             connection.commit()
         return cursor.rowcount > 0
 
+    @staticmethod
+    def _remove_obsolete_url_column(
+        connection: sqlite3.Connection,
+    ) -> None:
+        columns = {
+            str(row["name"])
+            for row in connection.execute(
+                "PRAGMA table_info(payload_configs)"
+            ).fetchall()
+        }
+        if "url" not in columns:
+            return
+
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute(
+            "DROP INDEX IF EXISTS idx_payload_configs_ip_active_latest"
+        )
+        connection.execute(
+            "DROP INDEX IF EXISTS idx_payload_configs_updated_at"
+        )
+        connection.execute(
+            """
+            ALTER TABLE payload_configs
+            RENAME TO payload_configs_with_obsolete_url
+            """
+        )
+        connection.execute(TABLE_SCHEMA)
+        connection.execute(
+            """
+            INSERT INTO payload_configs (
+                id, should_replace_payload, remote_host, remote_port,
+                user_ip_address, user_host_name, is_active, created_at,
+                updated_at
+            )
+            SELECT
+                id, should_replace_payload, remote_host, remote_port,
+                user_ip_address, user_host_name, is_active, created_at,
+                updated_at
+            FROM payload_configs_with_obsolete_url
+            """
+        )
+        connection.execute(
+            "DROP TABLE payload_configs_with_obsolete_url"
+        )
+        connection.commit()
+
     @contextmanager
     def _connection(self) -> Iterator[sqlite3.Connection]:
         connection = sqlite3.connect(
@@ -276,7 +323,6 @@ class SQLitePayloadConfigRepository:
         return PayloadConfig(
             id=int(row["id"]),
             should_replace_payload=bool(row["should_replace_payload"]),
-            url=str(row["url"]),
             remote_host=str(row["remote_host"]),
             remote_port=int(row["remote_port"]),
             user_ip_address=str(row["user_ip_address"]),

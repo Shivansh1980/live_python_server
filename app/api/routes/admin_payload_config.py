@@ -44,7 +44,6 @@ def payload_config_list(
 def create_payload_config(
     request: Request,
     csrf_token: Annotated[str, Form()],
-    url: Annotated[str, Form()],
     remote_host: Annotated[str, Form()],
     remote_port: Annotated[str, Form()],
     user_ip_address: Annotated[str, Form()],
@@ -59,7 +58,6 @@ def create_payload_config(
     try:
         payload = _validate_form(
             should_replace_payload=should_replace_payload,
-            url=url,
             remote_host=remote_host,
             remote_port=remote_port,
             user_ip_address=user_ip_address,
@@ -107,7 +105,6 @@ def update_payload_config(
     payload_config_id: int,
     request: Request,
     csrf_token: Annotated[str, Form()],
-    url: Annotated[str, Form()],
     remote_host: Annotated[str, Form()],
     remote_port: Annotated[str, Form()],
     user_ip_address: Annotated[str, Form()],
@@ -122,7 +119,6 @@ def update_payload_config(
     try:
         payload = _validate_form(
             should_replace_payload=should_replace_payload,
-            url=url,
             remote_host=remote_host,
             remote_port=remote_port,
             user_ip_address=user_ip_address,
@@ -166,7 +162,6 @@ def delete_payload_config(
 def _validate_form(
     *,
     should_replace_payload: str | None,
-    url: str,
     remote_host: str,
     remote_port: str,
     user_ip_address: str,
@@ -176,7 +171,6 @@ def _validate_form(
     return PayloadConfigInput.model_validate(
         {
             "should_replace_payload": should_replace_payload == "on",
-            "url": url,
             "remote_host": remote_host,
             "remote_port": remote_port,
             "user_ip_address": user_ip_address,
