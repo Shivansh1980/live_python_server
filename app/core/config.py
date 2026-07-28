@@ -25,7 +25,7 @@ def _split_origins(value: str | None) -> tuple[str, ...]:
 @dataclass(frozen=True, slots=True)
 class Settings:
     app_name: str = "Downloadable Files API"
-    app_version: str = "2.3.0"
+    app_version: str = "2.4.0"
     environment: str = "development"
     download_directory: Path = PROJECT_ROOT / "media" / "downloadable_files"
     database_path: Path = PROJECT_ROOT / "data" / "app.db"

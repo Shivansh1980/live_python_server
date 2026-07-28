@@ -31,6 +31,13 @@ class PayloadConfigRepository(Protocol):
     ) -> PayloadConfig | None:
         ...
 
+    def update_partial(
+        self,
+        payload_config_id: int,
+        changes: dict[str, object],
+    ) -> PayloadConfig | None:
+        ...
+
     def update_should_replace_for_latest_active(
         self,
         user_ip_address: str,

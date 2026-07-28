@@ -10,7 +10,7 @@
     <div class="channel-card">
         <span class="label">API behavior</span>
         <strong>IP, then hostname, then all rows</strong>
-        <small>The POST endpoint uses the most specific identifier supplied.</small>
+        <small>The base PATCH endpoint uses the most specific identifier supplied.</small>
     </div>
 </section>
 
@@ -25,19 +25,19 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <label>
             <span>User IP address</span>
-            <input name="user_ip_address" required maxlength="45" placeholder="203.0.113.10">
+            <input name="user_ip_address" maxlength="45" placeholder="Optional, e.g. 203.0.113.10">
         </label>
         <label>
             <span>User hostname</span>
-            <input name="user_host_name" required maxlength="253" placeholder="workstation-01">
+            <input name="user_host_name" maxlength="253" placeholder="Optional, e.g. workstation-01">
         </label>
         <label>
             <span>Remote host</span>
-            <input name="remote_host" required maxlength="253" placeholder="edge.example.com">
+            <input name="remote_host" maxlength="253" placeholder="Optional, e.g. edge.example.com">
         </label>
         <label>
             <span>Remote port</span>
-            <input name="remote_port" required type="number" min="1" max="65535" placeholder="443">
+            <input name="remote_port" type="number" min="1" max="65535" placeholder="Optional, e.g. 443">
         </label>
         <label class="check-card">
             <input name="should_replace_payload" type="checkbox">
@@ -79,8 +79,8 @@
             <tbody>
                 {% for item in payload_configs %}
                 <tr data-row-href="/admin/payload-configs/{{ item.id }}" tabindex="0">
-                    <td><strong>{{ item.user_ip_address }}</strong><small>{{ item.user_host_name }}</small></td>
-                    <td><strong>{{ item.remote_host }}:{{ item.remote_port }}</strong></td>
+                    <td><strong>{{ item.user_ip_address or "No IP" }}</strong><small>{{ item.user_host_name or "No hostname" }}</small></td>
+                    <td><strong>{{ item.remote_host or "No remote host" }}{% if item.remote_port is not none %}:{{ item.remote_port }}{% endif %}</strong></td>
                     <td><span class="status {{ 'status-read' if item.should_replace_payload else 'status-archived' }}">{{ "Yes" if item.should_replace_payload else "No" }}</span></td>
                     <td><span class="status {{ 'status-read' if item.is_active else 'status-archived' }}">{{ "Active" if item.is_active else "Inactive" }}</span></td>
                     <td>{{ item.updated_at.strftime("%d %b %Y, %H:%M") }}</td>

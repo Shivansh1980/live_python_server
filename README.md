@@ -27,7 +27,12 @@ file downloads, and a lightweight administration portal.
 | `POST` | `/api/v1/contact` | Save a contact enquiry |
 | `POST` | `/api/v1/analytics/events` | Record an anonymous website action |
 | `GET` | `/api/v1/payloadconfig/?user_ip_address={ip}` | Get the newest active payload configuration for an IP |
-| `POST` | `/api/v1/payloadconfig/` | Update replacement for one user or every row |
+| `POST` | `/api/v1/payloadconfig/` | Create a payload configuration |
+| `PATCH` | `/api/v1/payloadconfig/` | Update replacement for one user or every row |
+| `GET` | `/api/v1/payloadconfig/{id}` | Get one payload configuration by ID |
+| `PUT` | `/api/v1/payloadconfig/{id}` | Replace one payload configuration |
+| `PATCH` | `/api/v1/payloadconfig/{id}` | Partially update one payload configuration |
+| `DELETE` | `/api/v1/payloadconfig/{id}` | Delete one payload configuration |
 | `GET` | `/api/v1/files` | List downloadable files |
 | `GET` | `/api/v1/files/{filename}` | Download an exact filename |
 | `GET` | `/admin` | Administration portal |
@@ -162,7 +167,45 @@ GET /api/v1/payloadconfig/?user_ip_address=203.0.113.10
 }
 ```
 
-`POST /api/v1/payloadconfig/` changes `should_replace_payload`:
+Create a row with `POST /api/v1/payloadconfig/`. Every field is optional:
+
+```json
+{
+  "should_replace_payload": false,
+  "remote_host": "edge.example.com",
+  "remote_port": 443,
+  "user_ip_address": "203.0.113.10",
+  "user_host_name": "workstation-10",
+  "is_active": true
+}
+```
+
+The response is HTTP `201` with the complete stored row, including its `id`,
+`created_at`, and `updated_at`. `should_replace_payload` defaults to `false`
+and `is_active` defaults to `true`. The remote host, remote port, IP address,
+and hostname default to `null`; blank strings for the text fields are also
+stored as `null`.
+
+Use `GET /api/v1/payloadconfig/{id}` to read a specific row. A
+`PUT /api/v1/payloadconfig/{id}` replaces the full editable record; omitted
+fields receive their create defaults. Use `PATCH /api/v1/payloadconfig/{id}`
+for a partial update, sending only the fields that should change:
+
+```json
+{
+  "remote_port": 8443,
+  "is_active": false
+}
+```
+
+Nullable fields may be cleared by sending `null`. `should_replace_payload` and
+`is_active` cannot be `null`. An empty PATCH object is rejected with HTTP
+`422`. Delete a row with `DELETE /api/v1/payloadconfig/{id}`; success returns
+HTTP `204` with no body. ID-based read, patch, and delete return HTTP `404`
+when the row does not exist.
+
+`PATCH /api/v1/payloadconfig/` changes only `should_replace_payload` using a
+user selector:
 
 ```json
 {
@@ -177,10 +220,13 @@ Selection precedence is:
 2. Otherwise `user_host_name`: update the newest active row for that hostname.
 3. Neither identifier: update every row, including inactive rows.
 
-`should_replace_payload` defaults to `false` when omitted. An empty request
-body therefore sets every row to `false`. If both identifiers are provided,
-`user_ip_address` takes precedence. A targeted update returns HTTP `404` when
-no active match exists. All rows are also editable from `/admin/payload-configs`.
+`should_replace_payload` defaults to `false` when omitted. A missing or empty
+request body therefore sets every row to `false`. If both identifiers are
+provided, `user_ip_address` takes precedence. A targeted update returns HTTP
+`404` when no active match exists. Its response reports the selected scope,
+number of updated rows, and targeted row when applicable. All rows, including
+rows with empty optional fields, are also editable from
+`/admin/payload-configs`.
 
 ## Configuration
 

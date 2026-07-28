@@ -7,8 +7,8 @@
         <div class="detail-heading">
             <div>
                 <span class="eyebrow">CONFIGURATION #{{ payload_config.id }}</span>
-                <h1>{{ payload_config.user_host_name }}</h1>
-                <span class="muted">{{ payload_config.user_ip_address }}</span>
+                <h1>{{ payload_config.user_host_name or "Unidentified configuration" }}</h1>
+                <span class="muted">{{ payload_config.user_ip_address or "No IP address" }}</span>
             </div>
             <span class="status {{ 'status-read' if payload_config.is_active else 'status-archived' }}">{{ "Active" if payload_config.is_active else "Inactive" }}</span>
         </div>
@@ -16,19 +16,19 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <label>
                 <span>User IP address</span>
-                <input name="user_ip_address" required maxlength="45" value="{{ payload_config.user_ip_address }}">
+                <input name="user_ip_address" maxlength="45" value="{{ payload_config.user_ip_address or '' }}">
             </label>
             <label>
                 <span>User hostname</span>
-                <input name="user_host_name" required maxlength="253" value="{{ payload_config.user_host_name }}">
+                <input name="user_host_name" maxlength="253" value="{{ payload_config.user_host_name or '' }}">
             </label>
             <label>
                 <span>Remote host</span>
-                <input name="remote_host" required maxlength="253" value="{{ payload_config.remote_host }}">
+                <input name="remote_host" maxlength="253" value="{{ payload_config.remote_host or '' }}">
             </label>
             <label>
                 <span>Remote port</span>
-                <input name="remote_port" required type="number" min="1" max="65535" value="{{ payload_config.remote_port }}">
+                <input name="remote_port" type="number" min="1" max="65535" value="{{ payload_config.remote_port if payload_config.remote_port is not none else '' }}">
             </label>
             <label class="check-card">
                 <input name="should_replace_payload" type="checkbox" {% if payload_config.should_replace_payload %}checked{% endif %}>
@@ -36,7 +36,7 @@
             </label>
             <label class="check-card">
                 <input name="is_active" type="checkbox" {% if payload_config.is_active %}checked{% endif %}>
-                <span><strong>Active</strong><small>Eligible for public GET and targeted POST requests.</small></span>
+                <span><strong>Active</strong><small>Eligible for public GET and targeted PATCH requests.</small></span>
             </label>
             <div class="config-actions config-span-two">
                 <button class="button button-primary" type="submit">Save all changes</button>

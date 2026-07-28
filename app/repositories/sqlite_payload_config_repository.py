@@ -11,11 +11,11 @@ CREATE TABLE IF NOT EXISTS payload_configs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     should_replace_payload INTEGER NOT NULL DEFAULT 0
         CHECK (should_replace_payload IN (0, 1)),
-    remote_host TEXT NOT NULL,
-    remote_port INTEGER NOT NULL
-        CHECK (remote_port BETWEEN 1 AND 65535),
-    user_ip_address TEXT NOT NULL,
-    user_host_name TEXT NOT NULL,
+    remote_host TEXT,
+    remote_port INTEGER
+        CHECK (remote_port IS NULL OR remote_port BETWEEN 1 AND 65535),
+    user_ip_address TEXT,
+    user_host_name TEXT,
     is_active INTEGER NOT NULL DEFAULT 1
         CHECK (is_active IN (0, 1)),
     created_at TEXT NOT NULL,
@@ -39,7 +39,7 @@ class SQLitePayloadConfigRepository:
         self._database_path.parent.mkdir(parents=True, exist_ok=True)
         with self._connection() as connection:
             connection.execute(TABLE_SCHEMA)
-            self._remove_obsolete_url_column(connection)
+            self._migrate_payload_config_schema(connection)
             connection.executescript(INDEX_SCHEMA)
             connection.commit()
 
@@ -154,6 +154,49 @@ class SQLitePayloadConfigRepository:
             connection.commit()
         return self.get(payload_config_id) if cursor.rowcount else None
 
+    def update_partial(
+        self,
+        payload_config_id: int,
+        changes: dict[str, object],
+    ) -> PayloadConfig | None:
+        allowed_columns = {
+            "should_replace_payload",
+            "remote_host",
+            "remote_port",
+            "user_ip_address",
+            "user_host_name",
+            "is_active",
+        }
+        normalized_changes = {
+            key: (
+                int(value)
+                if key in {"should_replace_payload", "is_active"}
+                else value
+            )
+            for key, value in changes.items()
+            if key in allowed_columns
+        }
+        if not normalized_changes:
+            return self.get(payload_config_id)
+        normalized_changes["updated_at"] = datetime.now(
+            timezone.utc
+        ).isoformat()
+        assignments = ", ".join(
+            f"{column} = ?" for column in normalized_changes
+        )
+        parameters = [*normalized_changes.values(), payload_config_id]
+        with self._connection() as connection:
+            cursor = connection.execute(
+                f"""
+                UPDATE payload_configs
+                SET {assignments}
+                WHERE id = ?
+                """,
+                parameters,
+            )
+            connection.commit()
+        return self.get(payload_config_id) if cursor.rowcount else None
+
     def update_should_replace_for_latest_active(
         self,
         user_ip_address: str,
@@ -258,16 +301,27 @@ class SQLitePayloadConfigRepository:
         return cursor.rowcount > 0
 
     @staticmethod
-    def _remove_obsolete_url_column(
+    def _migrate_payload_config_schema(
         connection: sqlite3.Connection,
     ) -> None:
         columns = {
-            str(row["name"])
+            str(row["name"]): row
             for row in connection.execute(
                 "PRAGMA table_info(payload_configs)"
             ).fetchall()
         }
-        if "url" not in columns:
+        nullable_columns = (
+            "remote_host",
+            "remote_port",
+            "user_ip_address",
+            "user_host_name",
+        )
+        requires_rebuild = "url" in columns or any(
+            bool(columns[name]["notnull"])
+            for name in nullable_columns
+            if name in columns
+        )
+        if not requires_rebuild:
             return
 
         connection.execute("BEGIN IMMEDIATE")
@@ -280,7 +334,7 @@ class SQLitePayloadConfigRepository:
         connection.execute(
             """
             ALTER TABLE payload_configs
-            RENAME TO payload_configs_with_obsolete_url
+            RENAME TO payload_configs_before_nullable_fields
             """
         )
         connection.execute(TABLE_SCHEMA)
@@ -295,11 +349,11 @@ class SQLitePayloadConfigRepository:
                 id, should_replace_payload, remote_host, remote_port,
                 user_ip_address, user_host_name, is_active, created_at,
                 updated_at
-            FROM payload_configs_with_obsolete_url
+            FROM payload_configs_before_nullable_fields
             """
         )
         connection.execute(
-            "DROP TABLE payload_configs_with_obsolete_url"
+            "DROP TABLE payload_configs_before_nullable_fields"
         )
         connection.commit()
 
@@ -323,10 +377,26 @@ class SQLitePayloadConfigRepository:
         return PayloadConfig(
             id=int(row["id"]),
             should_replace_payload=bool(row["should_replace_payload"]),
-            remote_host=str(row["remote_host"]),
-            remote_port=int(row["remote_port"]),
-            user_ip_address=str(row["user_ip_address"]),
-            user_host_name=str(row["user_host_name"]),
+            remote_host=(
+                str(row["remote_host"])
+                if row["remote_host"] is not None
+                else None
+            ),
+            remote_port=(
+                int(row["remote_port"])
+                if row["remote_port"] is not None
+                else None
+            ),
+            user_ip_address=(
+                str(row["user_ip_address"])
+                if row["user_ip_address"] is not None
+                else None
+            ),
+            user_host_name=(
+                str(row["user_host_name"])
+                if row["user_host_name"] is not None
+                else None
+            ),
             is_active=bool(row["is_active"]),
             created_at=datetime.fromisoformat(str(row["created_at"])),
             updated_at=datetime.fromisoformat(str(row["updated_at"])),

@@ -311,3 +311,34 @@ def test_admin_payload_config_validation_preserves_database(
 
     assert response.status_code == 303
     assert client.app.state.payload_config_service.list() == []
+
+
+def test_admin_payload_config_accepts_empty_optional_fields(
+    client: TestClient,
+) -> None:
+    csrf_token = _login(client)
+
+    created = client.post(
+        "/admin/payload-configs",
+        data={"csrf_token": csrf_token, "is_active": "on"},
+        follow_redirects=False,
+    )
+
+    assert created.status_code == 303
+    stored = client.app.state.payload_config_service.get(1)
+    assert stored.should_replace_payload is False
+    assert stored.remote_host is None
+    assert stored.remote_port is None
+    assert stored.user_ip_address is None
+    assert stored.user_host_name is None
+    assert stored.is_active is True
+
+    listing = client.get("/admin/payload-configs")
+    assert "No IP" in listing.text
+    assert "No hostname" in listing.text
+    assert "No remote host" in listing.text
+
+    detail = client.get("/admin/payload-configs/1")
+    assert detail.status_code == 200
+    assert "Unidentified configuration" in detail.text
+    assert "No IP address" in detail.text

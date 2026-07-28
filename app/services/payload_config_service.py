@@ -7,7 +7,10 @@ from app.domain.payload_config import (
     PayloadReplacementUpdateResult,
 )
 from app.repositories.payload_config_contracts import PayloadConfigRepository
-from app.schemas.payload_config import PayloadConfigInput
+from app.schemas.payload_config import (
+    PayloadConfigInput,
+    PayloadConfigPatchRequest,
+)
 
 
 class PayloadConfigService:
@@ -53,6 +56,21 @@ class PayloadConfigService:
         payload_config = self._repository.update(
             payload_config_id,
             self._to_new_payload_config(payload),
+        )
+        if payload_config is None:
+            raise PayloadConfigNotFoundError(
+                f"Payload configuration {payload_config_id} was not found."
+            )
+        return payload_config
+
+    def update_partial(
+        self,
+        payload_config_id: int,
+        payload: PayloadConfigPatchRequest,
+    ) -> PayloadConfig:
+        payload_config = self._repository.update_partial(
+            payload_config_id,
+            payload.model_dump(exclude_unset=True),
         )
         if payload_config is None:
             raise PayloadConfigNotFoundError(
