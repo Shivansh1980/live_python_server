@@ -181,7 +181,7 @@ def test_admin_analytics_pages_toggle_and_event_management(
         "sessionId": "admin-test-session",
         "eventType": "click",
         "pageUrl": "http://127.0.0.1:3000/#contact",
-        "pageTitle": "CurvatureTech",
+        "pageTitle": "BuildMind Labs",
         "section": "contact",
         "elementTag": "button",
         "elementId": "contact-submit",

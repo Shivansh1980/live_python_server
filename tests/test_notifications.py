@@ -68,12 +68,15 @@ def test_contact_email_has_branded_html_and_plain_text_fallback() -> None:
     rendered = ContactEmailRenderer().render(contact)
 
     assert rendered.subject == (
-        "New project enquiry from Jane & Partners · CurvatureTech"
+        "New project enquiry from Jane & Partners · BuildMind Labs"
     )
-    assert "CURVATURETECH — NEW PROJECT ENQUIRY" in rendered.plain_text
+    assert "BUILDMIND LABS — NEW PROJECT ENQUIRY" in rendered.plain_text
     assert "Company: <script>alert('unsafe')</script>" in rendered.plain_text
     assert "Reply directly to this email" in rendered.plain_text
     assert "linear-gradient" in rendered.html
+    assert "BuildMind Labs leads" in rendered.html
+    assert "border:1px solid #dfe3ec" in rendered.html
+    assert "box-shadow:0 18px 48px rgba(25,35,61,.20)" in rendered.html
     assert "Reply to Jane &amp; Partners" in rendered.html
     assert "&lt;script&gt;alert(&#x27;unsafe&#x27;)&lt;/script&gt;" in rendered.html
     assert "Hello &lt;b&gt;team&lt;/b&gt;.<br>Please contact me soon." in rendered.html
@@ -135,7 +138,7 @@ def test_gmail_notifier_sends_multipart_email_to_new_recipient(
     assert len(sent_messages) == 1
     message = sent_messages[0]
     assert message["To"] == "shivanshshrivastava2000@gmail.com"
-    assert message["From"] == "sender@gmail.com"
+    assert message["From"] == "BuildMind Labs <sender@gmail.com>"
     assert message["Reply-To"] == "jane@example.com"
     assert message.get_content_type() == "multipart/alternative"
     plain_part, html_part = message.iter_parts()

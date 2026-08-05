@@ -24,10 +24,10 @@ class ContactEmailRenderer:
         submitted_at = contact.created_at.astimezone(timezone.utc).strftime(
             "%d %B %Y at %H:%M UTC"
         )
-        subject = f"New project enquiry from {subject_name} · CurvatureTech"
+        subject = f"New project enquiry from {subject_name} · BuildMind Labs"
         plain_text = "\n".join(
             [
-                "CURVATURETECH — NEW PROJECT ENQUIRY",
+                "BUILDMIND LABS — NEW PROJECT ENQUIRY",
                 "",
                 f"Lead ID: #{contact.id}",
                 f"Submitted: {submitted_at}",
@@ -90,15 +90,15 @@ class ContactEmailRenderer:
 </head>
 <body style="margin:0;padding:0;background:#f2f4f8;color:#172033;font-family:Arial,Helvetica,sans-serif;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
-    A new CurvatureTech project enquiry from {safe_name} is ready to review.
+    A new BuildMind Labs project enquiry from {safe_name} is ready to review.
   </div>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f2f4f8;">
     <tr>
       <td align="center" style="padding:32px 14px;">
-        <table role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" class="email-shell" style="width:620px;max-width:620px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 12px 35px rgba(25,35,61,.12);">
+        <table role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" class="email-shell" style="width:620px;max-width:620px;background:#ffffff;border:1px solid #dfe3ec;border-collapse:separate;border-radius:18px;overflow:hidden;box-shadow:0 18px 48px rgba(25,35,61,.20);">
           <tr>
             <td class="email-padding" style="padding:34px 38px;background:#16142f;background-image:linear-gradient(135deg,#17142f,#5b48d6);color:#ffffff;">
-              <div style="font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#cfc9ff;">CurvatureTech leads</div>
+              <div style="font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#cfc9ff;">BuildMind Labs leads</div>
               <h1 style="margin:12px 0 8px;font-size:28px;line-height:1.25;">A new project enquiry arrived</h1>
               <p style="margin:0;color:#e9e7ff;font-size:15px;line-height:1.6;">{safe_name} would like to start a conversation.</p>
             </td>
@@ -141,7 +141,7 @@ class ContactEmailRenderer:
               <a href="{reply_href}" style="display:inline-block;padding:13px 22px;background:#5b48d6;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;border-radius:9px;">Reply to {safe_name}</a>
               <div style="margin-top:22px;padding-top:18px;border-top:1px solid #eceef4;color:#7a8194;font-size:12px;line-height:1.6;">
                 Lead #{contact.id} · Received {safe_submitted_at}<br>
-                Sent securely by the CurvatureTech contact API.
+                Sent securely by the BuildMind Labs contact API.
               </div>
             </td>
           </tr>

@@ -1,6 +1,6 @@
-# CurvatureTech FastAPI service
+# BuildMind Labs FastAPI service
 
-A production-ready FastAPI backend for the CurvatureTech contact form, secure
+A production-ready FastAPI backend for the BuildMind Labs contact form, secure
 file downloads, and a lightweight administration portal.
 
 ## Features

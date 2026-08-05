@@ -2,6 +2,7 @@ import json
 import logging
 import smtplib
 from email.message import EmailMessage
+from email.utils import formataddr
 from typing import Protocol
 from urllib.request import Request, urlopen
 
@@ -31,7 +32,7 @@ class DiscordNotifier:
 
     def send(self, contact: Contact) -> None:
         payload = {
-            "username": "CurvatureTech Leads",
+            "username": "BuildMind Labs Leads",
             "allowed_mentions": {"parse": []},
             "embeds": [
                 {
@@ -76,7 +77,7 @@ class DiscordNotifier:
             data=json.dumps(payload).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
-                "User-Agent": "CurvatureTech-Contact-API/1.0",
+                "User-Agent": "BuildMind-Labs-Contact-API/1.0",
             },
             method="POST",
         )
@@ -115,7 +116,7 @@ class GmailSmtpNotifier:
         rendered = self._renderer.render(contact)
         message = EmailMessage()
         message["Subject"] = rendered.subject
-        message["From"] = self._username
+        message["From"] = formataddr(("BuildMind Labs", self._username))
         message["To"] = self._recipient
         message["Reply-To"] = contact.email
         message.set_content(rendered.plain_text)

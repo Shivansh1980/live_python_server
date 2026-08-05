@@ -56,7 +56,7 @@
             </label>
             <button class="button button-primary button-block" type="submit">Save status</button>
         </form>
-        <a class="button button-secondary button-block" href="mailto:{{ contact.email }}?subject=Re:%20your%20CurvatureTech%20enquiry">Reply by email</a>
+        <a class="button button-secondary button-block" href="mailto:{{ contact.email }}?subject=Re:%20your%20BuildMind%20Labs%20enquiry">Reply by email</a>
         <hr>
         <form method="post" action="/admin/contacts/{{ contact.id }}/delete" data-confirm="Permanently delete this contact submission?">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

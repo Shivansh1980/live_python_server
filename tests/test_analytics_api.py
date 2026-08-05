@@ -25,7 +25,7 @@ def test_analytics_event_records_detailed_anonymous_data(
     response = client.post(
         "/api/v1/analytics/events",
         json=VALID_EVENT,
-        headers={"user-agent": "CurvatureTech-Test-Browser/1.0"},
+        headers={"user-agent": "BuildMind-Labs-Test-Browser/1.0"},
     )
 
     assert response.status_code == 202
@@ -39,7 +39,7 @@ def test_analytics_event_records_detailed_anonymous_data(
     assert stored.section == "ai-integration"
     assert stored.duration_ms == 12800
     assert stored.scroll_depth == 72.5
-    assert stored.user_agent == "CurvatureTech-Test-Browser/1.0"
+    assert stored.user_agent == "BuildMind-Labs-Test-Browser/1.0"
     assert stored.metadata_json == '{"source":"navigation","visible":true}'
 
 
