@@ -6,6 +6,7 @@ from typing import Protocol
 from urllib.request import Request, urlopen
 
 from app.domain.models import Contact
+from app.services.contact_email_renderer import ContactEmailRenderer
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +97,7 @@ class GmailSmtpNotifier:
         app_password: str,
         recipient: str,
         timeout_seconds: float = 10,
+        renderer: ContactEmailRenderer | None = None,
     ) -> None:
         self._host = host
         self._port = port
@@ -103,32 +105,21 @@ class GmailSmtpNotifier:
         self._app_password = app_password
         self._recipient = recipient
         self._timeout_seconds = timeout_seconds
+        self._renderer = renderer or ContactEmailRenderer()
 
     @property
     def channel(self) -> str:
         return "email"
 
     def send(self, contact: Contact) -> None:
+        rendered = self._renderer.render(contact)
         message = EmailMessage()
-        message["Subject"] = f"New CurvatureTech enquiry: {contact.name}"
+        message["Subject"] = rendered.subject
         message["From"] = self._username
         message["To"] = self._recipient
         message["Reply-To"] = contact.email
-        message.set_content(
-            "\n".join(
-                [
-                    f"Lead ID: {contact.id}",
-                    f"Name: {contact.name}",
-                    f"Email: {contact.email}",
-                    f"Company: {contact.company or 'Not provided'}",
-                    f"Project type: {contact.project_type or 'Not provided'}",
-                    f"Budget: {contact.budget or 'Not provided'}",
-                    "",
-                    "Message:",
-                    contact.message,
-                ]
-            )
-        )
+        message.set_content(rendered.plain_text)
+        message.add_alternative(rendered.html, subtype="html")
 
         with smtplib.SMTP(
             self._host,

@@ -6,8 +6,10 @@ file downloads, and a lightweight administration portal.
 ## Features
 
 - Contact enquiries are validated, rate limited, and saved to SQLite.
-- Optional Discord webhook and Gmail SMTP notifications are failure-isolated;
-  an unavailable notification provider never loses the saved enquiry.
+- Optional Discord webhook and branded responsive Gmail notifications are
+  failure-isolated; an unavailable provider never loses the saved enquiry.
+- Email notifications include a polished HTML layout, safe escaped content,
+  a direct reply action, and a plain-text fallback for every mail client.
 - A signed-session admin portal manages enquiries and downloadable files.
 - Anonymous website interaction analytics can be paused or resumed by an admin.
 - Analytics records page views, clicks, focus, scrolling, section visibility,
@@ -245,7 +247,7 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USERNAME=
 SMTP_APP_PASSWORD=
-NOTIFICATION_EMAIL_TO=
+NOTIFICATION_EMAIL_TO=shivanshshrivastava2000@gmail.com
 ```
 
 Notification providers are optional. A contact is always stored in SQLite even
@@ -265,7 +267,7 @@ Password, then configure:
 ```dotenv
 SMTP_USERNAME=sender@gmail.com
 SMTP_APP_PASSWORD="the-16-character-app-password"
-NOTIFICATION_EMAIL_TO=recipient@example.com
+NOTIFICATION_EMAIL_TO=shivanshshrivastava2000@gmail.com
 ```
 
 Do not use or store the normal Google account password.
@@ -290,6 +292,43 @@ python -m uvicorn app.main:app --reload
 
 Open `http://127.0.0.1:8000/docs` and
 `http://127.0.0.1:8000/admin`.
+
+### Renew a PythonAnywhere free web app
+
+The local Playwright utility renews the web app for whichever PythonAnywhere
+account is already signed in to a Chrome instance with remote debugging
+enabled. It does not contain credentials and never clicks Disable, Delete, or
+Remove controls. By default it also clicks Reload after renewal; reloading
+restarts web workers but does not delete application files or database data.
+
+Install the separate automation dependency:
+
+```powershell
+python -m pip install -r requirements-automation.txt
+```
+
+Start a dedicated Chrome automation profile. Sign in to PythonAnywhere in that
+window once; later runs reuse that signed-in profile:
+
+```powershell
+& "$env:ProgramFiles\Google\Chrome\Application\chrome.exe" `
+  --remote-debugging-port=9222 `
+  --user-data-dir="$env:LOCALAPPDATA\ChromePythonAnywhereAutomation"
+```
+
+Preview the actions without clicking anything, then perform the renewal:
+
+```powershell
+python scripts/renew_pythonanywhere.py --dry-run
+python scripts/renew_pythonanywhere.py
+```
+
+Use `--no-reload` to renew without restarting workers. EU-system accounts can
+use `--origin https://eu.pythonanywhere.com`. If the Web tab does not show a
+`Run until`, `Extend`, or `Renew` control, PythonAnywhere is not currently
+offering a renewal action; the script reports zero renewed apps and leaves the
+configuration unchanged. This utility is intended for an attended local run,
+because PythonAnywhere can change its dashboard markup or renewal policy.
 
 The committed `data/app_seed.db` contains only the empty schema and the default
 analytics collection setting. On first startup it is copied to the ignored
